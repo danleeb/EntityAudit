@@ -74,13 +74,13 @@ class AuditReader
             $id = array($class->identifier[0] => $id);
         }
 
-        $whereSQL  = "e." . $this->config->getRevisionFieldName() ." <= ?";
+        $whereSQL  = "e." . $this->config->getRevisionFieldName() . " <= ?";
 
-        foreach ($class->identifier AS $idField) {
+        foreach ($class->identifier as $idField) {
             if (isset($class->fieldMappings[$idField])) {
                 $columnName = $class->fieldMappings[$idField]['columnName'];
-            } else if (isset($class->associationMappings[$idField])) {
-                $columnName = $class->associationMappings[$idField]['joinColumns'][0];
+            } elseif (isset($class->associationMappings[$idField])) {
+                $columnName = $class->associationMappings[$idField]['joinColumns'][0]['name'];
             }
 
             $whereSQL .= " AND " . $columnName . " = ?";
@@ -100,7 +100,7 @@ class AuditReader
             $columnMap[$field] = $this->platform->getSQLResultCasing($columnName);
         }
 
-        foreach ($class->associationMappings AS $assoc) {
+        foreach ($class->associationMappings as $assoc) {
             if ( ($assoc['type'] & ClassMetadata::TO_ONE) == 0 || !$assoc['isOwningSide']) {
                 continue;
             }
@@ -211,7 +211,7 @@ class AuditReader
         $revisionsData = $this->em->getConnection()->fetchAll($query);
 
         $revisions = array();
-        foreach ($revisionsData AS $row) {
+        foreach ($revisionsData as $row) {
             $revisions[] = new Revision(
                 $row['id'],
                 \DateTime::createFromFormat($this->platform->getDateTimeFormatString(), $row['timestamp']),
@@ -232,7 +232,7 @@ class AuditReader
         $auditedEntities = $this->metadataFactory->getAllClassNames();
 
         $changedEntities = array();
-        foreach ($auditedEntities AS $className) {
+        foreach ($auditedEntities as $className) {
             $class = $this->em->getClassMetadata($className);
             $tableName = $this->config->getTablePrefix() . $class->table['name'] . $this->config->getTableSuffix();
 
@@ -247,7 +247,7 @@ class AuditReader
                 $columnMap[$field] = $this->platform->getSQLResultCasing($columnName);
             }
 
-            foreach ($class->associationMappings AS $assoc) {
+            foreach ($class->associationMappings as $assoc) {
                 if ( ($assoc['type'] & ClassMetadata::TO_ONE) > 0 && $assoc['isOwningSide']) {
                     foreach ($assoc['targetToSourceKeyColumns'] as $sourceCol) {
                         $columnList .= ', ' . $sourceCol;
@@ -260,14 +260,13 @@ class AuditReader
             $query = "SELECT " . $columnList . " FROM " . $tableName . " e WHERE " . $whereSQL;
             $revisionsData = $this->em->getConnection()->executeQuery($query, array($revision));
 
-            foreach ($revisionsData AS $row) {
+            foreach ($revisionsData as $row) {
                 $id   = array();
                 $data = array();
 
-                foreach ($class->identifier AS $idField) {
+                foreach ($class->identifier as $idField) {
                     $id[$idField] = $row[$idField];
                 }
-
                 foreach ($columnMap as $fieldName => $resultName) {
                     $data[$fieldName] = $row[$resultName];
                 }
@@ -322,7 +321,7 @@ class AuditReader
         }
 
         $whereSQL = "";
-        foreach ($class->identifier AS $idField) {
+        foreach ($class->identifier as $idField) {
             if (isset($class->fieldMappings[$idField])) {
                 if ($whereSQL) {
                     $whereSQL .= " AND ";
@@ -332,7 +331,7 @@ class AuditReader
                 if ($whereSQL) {
                     $whereSQL .= " AND ";
                 }
-                $whereSQL .= "e." . $class->associationMappings[$idField]['joinColumns'][0] . " = ?";
+                $whereSQL .= "e." . $class->associationMappings[$idField]['joinColumns'][0]['name'] . " = ?";
             }
         }
 
@@ -342,7 +341,7 @@ class AuditReader
 
         $revisions = array();
         $this->platform = $this->em->getConnection()->getDatabasePlatform();
-        foreach ($revisionsData AS $row) {
+        foreach ($revisionsData as $row) {
             $revisions[] = new Revision(
                 $row['id'],
                 \DateTime::createFromFormat($this->platform->getDateTimeFormatString(), $row['timestamp']),
