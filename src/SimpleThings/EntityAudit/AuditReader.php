@@ -265,7 +265,11 @@ class AuditReader
                 $data = array();
 
                 foreach ($class->identifier as $idField) {
-                    $id[$idField] = $row[$idField];
+                    $rowIdField = $idField;
+                    if (isset($class->associationMappings[$idField])) {
+                        $rowIdField = $class->associationMappings[$idField]['joinColumns'][0]['name'];
+                    }
+                    $id[$idField] = $row[$rowIdField];
                 }
                 foreach ($columnMap as $fieldName => $resultName) {
                     $data[$fieldName] = $row[$resultName];
